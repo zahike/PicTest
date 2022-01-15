@@ -75,7 +75,6 @@ inout cam_iic_sda_io,
     );
 
 wire Ex_rstn = ~btn[0];    
-wire Bit5 = sw[0];
 
 wire GPIO_0;          //  output GPIO_0;
 wire sccb_clk_0;      //  output sccb_clk_0;
@@ -128,7 +127,9 @@ PicTesst_BD PicTesst_BD_inst
 .sccb_data_in_0 (sccb_data_in_0 ),    //  input sccb_data_in_0;
 .sccb_data_out_0(sccb_data_out_0),    //  output sccb_data_out_0;
 
-.Bit5(Bit5), // input Bit5
+.Bit5     (sw[3]  ),            //  input Bit5
+.CheckMath(sw[2]  ),            //  input      CheckMath;
+.SelFrame (sw[1:0]),            //  input [1:0]SelFrame ;
 
 .TMDS_Clk_n_0 (hdmi_tx_clk_n ),   //   output TMDS_Clk_n_0;
 .TMDS_Clk_p_0 (hdmi_tx_clk_p ),   //   output TMDS_Clk_p_0;

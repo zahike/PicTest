@@ -82,7 +82,6 @@ m_axis_video_tlast  = 0;   // input         s_axis_video_tlast ,
 repeat (5)begin 
         wrLine(1);
         repeat (479) wrLine(0);
-//        repeat (1000000) @(posedge clk);
         #4620608;
         @(posedge clk);
     end
@@ -97,43 +96,29 @@ wire TxPixelClk ;
  wire          Ms_axis_video_tvalid = m_axis_video_tvalid ; //input  wire s_axis_video_tvalid            , 
  wire          Ms_axis_video_tlast  = m_axis_video_tlast ; //input  wire s_axis_video_tlast             , 
  wire          Ms_axis_video_tuser  = m_axis_video_tuser ; //input  wire s_axis_video_tuser         ,     
-// wire [23 : 0] Mm_axis_video_tdata    ; //output wire [23 : 0] m_axis_video_tdata    , 
-// wire          Mm_axis_video_tvalid   ; //output wire m_axis_video_tvalid            , 
-// wire          Mm_axis_video_tready   ;// = 1'b1; //input  wire m_axis_video_tready            , 
-// wire          Mm_axis_video_tlast    ; //output wire m_axis_video_tlast             , 
-// wire          Mm_axis_video_tuser    ; //output wire m_axis_video_tuser               
 
 wire HVsync                     ;                        // input HVsync,                      
-wire TxFraimSync;
+wire FrameSync;
 wire HMemRead                   ;                      // input HMemRead,                    
 wire  [23:0] TxHDMIdata_Slant     ;   // output [11:0] HDMIdata             
 wire [23 : 0] Out_pData;
 wire Out_pHSync;
 wire pVDE;
 
-wire  TransValid;
-wire [7:0] Trans0Data;
-wire [7:0] Trans1Data;
-wire [7:0] Trans2Data;
-wire [7:0] Trans3Data;
 
 wire TranEn          ;
 wire [11:0] TranData ;
 wire NextData        ;
 wire TranFrame       ; // output TranFrame
 wire [15:0] TranAdd  ; //output [15:0] TranAdd,
-
-wire SCLK;
-wire MOSI;
-wire MISO = 1'b0;
-wire CS_n;
-
   
 TxMem TxMem_inst(
 .clk               (clk),                       // input Cclk,                        
 .rstn               (rstn),                      // input rstn,                        
 
 .Bit5(1'b1),
+.CheckMath( 1'b1),    //  input      CheckMath;
+.SelFrame (2'b01),    //  input [1:0]SelFrame ;
 //.Mem_cont           (4'hf),
 .s_axis_video_tready(Ms_axis_video_tready),       // output        s_axis_video_tready, 
 .s_axis_video_tdata (Ms_axis_video_tdata ),       // input  [23:0] s_axis_video_tdata , 
@@ -141,7 +126,7 @@ TxMem TxMem_inst(
 .s_axis_video_tuser (Ms_axis_video_tuser ),       // input         s_axis_video_tuser , 
 .s_axis_video_tlast (Ms_axis_video_tlast ),       // input         s_axis_video_tlast , 
 
-//.FraimSync          (TxFraimSync          ),
+.FrameSync          (FrameSync          ),
 .PixelClk           (TxPixelClk           ),       // input Hclk,                        
 //.FraimSel           (1'b00               ),
 
@@ -150,106 +135,23 @@ TxMem TxMem_inst(
 .pVDE               (pVDE               ),       // output        Out_pVDE  ,
 .HDMIdata           (TxHDMIdata_Slant   )        // output [11:0] HDMIdata    
 
-//.SCLK(SCLK),
-//.MOSI(MOSI),
-//.MISO(MISO),
-//.CS_n(CS_n),
-
-//.TransValid(TransValid),
-//.Trans0Data(Trans0Data),//output [7:0] Trans0Data,
-//.Trans1Data(Trans1Data),//output [7:0] Trans1Data,
-//.Trans2Data(Trans2Data),//output [7:0] Trans2Data,
-//.Trans3Data(Trans3Data) //output [7:0] Trans3Data,   
-
-//.TranEn  (TranEn  ),     // output TranEn,      
-//.TranData(TranData),   // output [11:0] TranData,
-//.NextData(NextData),    // input NextData
-//.TranFrame(TranFrame), // output TranFrame    
-//.TranAdd (TranAdd) // output [15:0] TranAdd,  
     );
 
-reg SelHDMI;
-initial SelHDMI = 1'b1;
-always @(TxFraimSync) SelHDMI = ~SelHDMI;
   TxHDMI TxHDMI_inst (
     .clk(TxPixelClk),
     .rstn(HDMIrstn),
-    .SelHDMI(SelHDMI),
+    
     .Out_pData(Out_pData),
     .Out_pVSync(HVsync),
     .Out_pHSync(Out_pHSync),
     .Out_pVDE(pVDE),
-    .FraimSync(TxFraimSync),
+    .FrameSync(FrameSync),
+    .CheckMath( 1'b1),    //  input      CheckMath;
+    
     .Mem_Read(HMemRead),
     .Mem_Data(TxHDMIdata_Slant)
   );
   
-/*
-wire [3 : 0] GPIO_OutEn;   // output wire [3 : 0] GPIO_OutEn;
-wire [3 : 0] GPIO_Out;     // output wire [3 : 0] GPIO_Out;
-reg  [3 : 0] GPIO_In;      // input  wire [3 : 0] GPIO_In;
-wire GetDataEn;            // input  wire GetDataEn;
-wire [11 : 0] GetData;     // input  wire [11 : 0] GetData;
-wire Next_data;            // output wire Next_data;
-wire [11 : 0] RxData;      // output wire [11 : 0] RxData;
-wire RxValid;              // output wire RxValid;
-wire FrameSync;            // output wire FrameSync;
-wire [15 : 0] CS_nCounter; // output wire [15 : 0] CS_nCounter;
-wire [7 : 0] ShiftMISO;    // output wire [7 : 0] ShiftMISO;
-
-
-initial begin
-GPIO_In = 4'h0;
-@(posedge rstn);
-#1000;
-WriteAXI(32'h00000014,32'h00000004);
-WriteAXI(32'h00000024,32'h0000007e);
-WriteAXI(32'h0000002c,32'h00000012);
-WriteAXI(32'h00000000,32'h00000002);
-
-while (1) begin
-    @(posedge CS_n);
-    GPIO_In = 4'h8;
-    #1000;
-    @(posedge clk);
-    #1;
-    GPIO_In = 4'h0;
-end 
-end 
-
-  CC1200SPI_Top CC1200SPI_Top_inst (                    
-    .APBclk(aclk),                      // input wire APBclk;
-    .clk(clk),                            // input wire clk;
-    .APBrstn(rstn),                    // input wire APBrstn;
-    .rstn(rstn),                          // input wire rstn;
-    .APB_S_0_paddr  (S_APB_0_paddr  ),      // input wire [31 : 0] APB_S_0_paddr;
-    .APB_S_0_penable(S_APB_0_penable),    // input wire APB_S_0_penable;
-    .APB_S_0_prdata (S_APB_0_prdata ),     // output wire [31 : 0] APB_S_0_prdata;
-    .APB_S_0_pready (S_APB_0_pready ),     // output wire APB_S_0_pready;
-    .APB_S_0_psel   (S_APB_0_psel   ),       // input wire APB_S_0_psel;
-    .APB_S_0_pslverr(S_APB_0_pslverr),    // output wire APB_S_0_pslverr;
-    .APB_S_0_pwdata (S_APB_0_pwdata ),     // input wire [31 : 0] APB_S_0_pwdata;
-    .APB_S_0_pwrite (S_APB_0_pwrite ),     // input wire APB_S_0_pwrite;
-    .GPIO_OutEn(GPIO_OutEn),              // output wire [3 : 0] GPIO_OutEn;
-    .GPIO_Out(GPIO_Out),                  // output wire [3 : 0] GPIO_Out;
-    .GPIO_In(GPIO_In),                    // input wire [3 : 0] GPIO_In;
-    .GetDataEn(TranEn),                // input wire GetDataEn;
-    .GetData(TranData),                    // input wire [11 : 0] GetData;
-    .Next_data(NextData),                // output wire Next_data;
-    .TranFrame(TranFrame),               // output TranFrame     
-    .FraimSync(TxFraimSync),              // input        FraimSync, 
-    .TranAdd (TranAdd),                  // output [15:0] TranAdd,  
-    .RxData(RxData),                      // output wire [11 : 0] RxData;
-    .RxValid(RxValid),                    // output wire RxValid;
-    .FrameSync(FrameSync),                // output wire FrameSync;
-    .CS_nCounter(CS_nCounter),            // output wire [15 : 0] CS_nCounter;
-    .ShiftMISO(ShiftMISO),                // output wire [7 : 0] ShiftMISO;
-    .SCLK(SCLK),                          // output wire SCLK;
-    .MOSI(MOSI),                          // output wire MOSI;
-    .MISO(MISO),                          // input wire MISO;
-    .CS_n(CS_n)                           // output wire CS_n;
-  );
-  */
 ////////////////////////////// End Of mem test //////////////////////////////
 task wr4fix;
 begin 

@@ -25,12 +25,16 @@ input clk,
 input rstn,
 
 input Bit5,
+input CheckMath,
+input [1:0] SelFrame,
 
 output        s_axis_video_tready,
 input  [31:0] s_axis_video_tdata ,
 input         s_axis_video_tvalid,
 input         s_axis_video_tuser ,
 input         s_axis_video_tlast ,
+
+output FrameSync,
 
 output PixelClk,
 
@@ -43,6 +47,7 @@ output [23:0] HDMIdata
 
 assign s_axis_video_tready = 1'b1;   
 
+////////////// Delay data ////////////// 
 reg Del_Last;
 always @(posedge clk or negedge rstn)
     if (!rstn) Del_Last <= 1'b0;
@@ -56,14 +61,29 @@ always @(posedge clk or negedge rstn)
     if (!rstn) DelData <= 15'h0000;
      else if (s_axis_video_tvalid && Bit5) DelData <= {s_axis_video_tdata[29:25],s_axis_video_tdata[19:15],s_axis_video_tdata[9:5]};     
      else if (s_axis_video_tvalid) DelData <= {s_axis_video_tdata[29:26],1'b0,s_axis_video_tdata[19:16],1'b0,s_axis_video_tdata[9:6],1'b0};     
+////////////// End Of Delay data ////////////// 
+reg Reg_Frame;
+always @(posedge clk or negedge rstn) 
+    if (!rstn) Reg_Frame <= 1'b0;
+     else if (!SelFrame[1]) Reg_Frame <= SelFrame[0];
+     else if (s_axis_video_tuser && s_axis_video_tvalid) Reg_Frame <= ~Reg_Frame;
+assign FrameSync = Reg_Frame;
 
+reg Reg_Valid_add;
+always @(posedge clk or negedge rstn) 
+    if (!rstn) Reg_Valid_add <= 1'b0;
+     else if (!CheckMath) Reg_Valid_add <= 1'b1;
+     else if (s_axis_video_tuser && s_axis_video_tvalid) Reg_Valid_add <= Reg_Frame;
+     else if (Del_Last)  Reg_Valid_add <=  Reg_Valid_add;
+     else if (Del_Valid) Reg_Valid_add <= ~Reg_Valid_add;
+     
 reg [19:0] CWadd;       // Camera write address
 always @(posedge clk or negedge rstn)
     if (!rstn) CWadd <= 20'h00000;
      else if (s_axis_video_tvalid && s_axis_video_tuser && s_axis_video_tready) CWadd <= 20'h00000;
-     else if (Del_Valid) CWadd <= CWadd + 1;
+     else if (Del_Valid && Reg_Valid_add) CWadd <= CWadd + 1;
 
-wire WriteMem = (CWadd < 256000) ? Del_Valid : 1'b0;
+wire WriteMem = (CWadd < 256000) ? Del_Valid && Reg_Valid_add : 1'b0;
 reg [14:0] Mem [0:255999]; // 95ff
 always @(posedge clk)
     if (WriteMem) Mem[CWadd] <= DelData;
@@ -87,12 +107,18 @@ always @(posedge clk or negedge rstn)
    );
     
 //////////////// End Of Pixel Clock generator //////////////// 
+reg ReadAdd;
+always @(posedge clk or negedge rstn)
+    if (!rstn) ReadAdd <= 1'b0;
+     else if (!CheckMath) ReadAdd <= 1'b1;
+     else if (!HMemRead) ReadAdd <= 1'b0;
+     else ReadAdd <= ~ReadAdd;
 
 reg [19:0] HRadd;
 always @(posedge clk or negedge rstn)
     if (!rstn) HRadd <= 20'h00000;
      else if (!HVsync) HRadd <= 20'h00000;
-     else if ((Cnt_Div_Clk == 3'b011) && HMemRead) HRadd <= HRadd + 1;
+     else if ((Cnt_Div_Clk == 3'b011) && ReadAdd && HMemRead) HRadd <= HRadd + 1;
      
 reg [14:0] Reg_Mem;
 always @(posedge clk)
@@ -101,7 +127,7 @@ always @(posedge clk)
 reg [23:0] RGB4Pix;
 always @(posedge clk or negedge rstn)
     if (!rstn) RGB4Pix <= 24'h000000;
-     else if (Cnt_Div_Clk == 3'b000) RGB4Pix <= {Reg_Mem[14:10],3'h0,Reg_Mem[9:5],3'h0,Reg_Mem[4:0],3'h0};
+     else if (Cnt_Div_Clk == 3'b000) RGB4Pix <= {Reg_Mem[14:10],3'h7,Reg_Mem[9:5],3'h7,Reg_Mem[4:0],3'h7};
 
 assign  HDMIdata = (HRadd < 255999) ? RGB4Pix : 24'h000000;
   

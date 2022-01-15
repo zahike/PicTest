@@ -233,7 +233,9 @@ proc create_root_design { parentCell } {
 
   # Create ports
   set Bit5 [ create_bd_port -dir I Bit5 ]
+  set CheckMath [ create_bd_port -dir I CheckMath ]
   set GPIO_0 [ create_bd_port -dir O GPIO_0 ]
+  set SelFrame [ create_bd_port -dir I -from 1 -to 0 SelFrame ]
   set TMDS_Clk_n_0 [ create_bd_port -dir O TMDS_Clk_n_0 ]
   set TMDS_Clk_p_0 [ create_bd_port -dir O TMDS_Clk_p_0 ]
   set TMDS_Data_n_0 [ create_bd_port -dir O -from 2 -to 0 TMDS_Data_n_0 ]
@@ -874,6 +876,7 @@ proc create_root_design { parentCell } {
 
   # Create port connections
   connect_bd_net -net Bit5_0_1 [get_bd_ports Bit5] [get_bd_pins TxMem_0/Bit5]
+  connect_bd_net -net CheckMath_0_1 [get_bd_ports CheckMath] [get_bd_pins TxHDMI_0/CheckMath] [get_bd_pins TxMem_0/CheckMath]
   connect_bd_net -net MIPI_D_PHY_RX_0_RxByteClkHS [get_bd_pins MIPI_CSI_2_RX_0/RxByteClkHS] [get_bd_pins MIPI_D_PHY_RX_0/RxByteClkHS]
   connect_bd_net -net Net [get_bd_pins TxHDMI_0/clk] [get_bd_pins TxMem_0/PixelClk] [get_bd_pins rgb2dvi_0/PixelClk]
   connect_bd_net -net SCCBGPIO_Top_0_GPIO [get_bd_ports GPIO_0] [get_bd_pins SCCBGPIO_Top_0/GPIO]
@@ -884,11 +887,13 @@ proc create_root_design { parentCell } {
   connect_bd_net -net SCCBGPIO_Top_0_sccb_clk_en [get_bd_ports sccb_clk_en_0] [get_bd_pins SCCBGPIO_Top_0/sccb_clk_en]
   connect_bd_net -net SCCBGPIO_Top_0_sccb_data_en [get_bd_ports sccb_data_en_0] [get_bd_pins SCCBGPIO_Top_0/sccb_data_en]
   connect_bd_net -net SCCBGPIO_Top_0_sccb_data_out [get_bd_ports sccb_data_out_0] [get_bd_pins SCCBGPIO_Top_0/sccb_data_out]
+  connect_bd_net -net SelFrame_0_1 [get_bd_ports SelFrame] [get_bd_pins TxMem_0/SelFrame]
   connect_bd_net -net TxHDMI_0_Mem_Read [get_bd_pins TxHDMI_0/Mem_Read] [get_bd_pins TxMem_0/HMemRead]
   connect_bd_net -net TxHDMI_0_Out_pData [get_bd_pins TxHDMI_0/Out_pData] [get_bd_pins rgb2dvi_0/vid_pData]
   connect_bd_net -net TxHDMI_0_Out_pHSync [get_bd_pins TxHDMI_0/Out_pHSync] [get_bd_pins rgb2dvi_0/vid_pVSync]
   connect_bd_net -net TxHDMI_0_Out_pVDE [get_bd_pins TxHDMI_0/Out_pVDE] [get_bd_pins TxMem_0/pVDE] [get_bd_pins rgb2dvi_0/vid_pVDE]
   connect_bd_net -net TxHDMI_0_Out_pVSync [get_bd_pins TxHDMI_0/Out_pVSync] [get_bd_pins TxMem_0/HVsync] [get_bd_pins rgb2dvi_0/vid_pHSync]
+  connect_bd_net -net TxMem_0_FrameSync [get_bd_pins TxHDMI_0/FrameSync] [get_bd_pins TxMem_0/FrameSync]
   connect_bd_net -net TxMem_0_HDMIdata [get_bd_pins TxHDMI_0/Mem_Data] [get_bd_pins TxMem_0/HDMIdata]
   connect_bd_net -net axi_apb_bridge_0_m_apb_paddr [get_bd_pins SCCBGPIO_Top_0/S_APB_0_paddr] [get_bd_pins axi_apb_bridge_0/m_apb_paddr]
   connect_bd_net -net axi_apb_bridge_0_m_apb_penable [get_bd_pins SCCBGPIO_Top_0/S_APB_0_penable] [get_bd_pins axi_apb_bridge_0/m_apb_penable]
